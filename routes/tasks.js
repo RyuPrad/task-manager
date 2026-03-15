@@ -50,7 +50,7 @@ router.get('/:id', (req, res) => {
     res.json(task);
 });
 
-router.put('/', (req, res) => {
+router.put('/:id', (req, res) => {
 
     const task = findTask(req.params.id);
 
@@ -67,7 +67,7 @@ router.put('/', (req, res) => {
     res.json(task);
 });
 
-router.delete('/', (req, res) => {
+router.delete('/:id', (req, res) => {
 
     const index = tasks.findIndex(t => t.id === parseInt(req.params.id));
 
