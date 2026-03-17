@@ -1,82 +1,74 @@
 const express = require('express');
 const router = express.Router();
+const pool = require('../db/pool');
 const AppError = require('../utils/AppError');
+const catchAsync = require('../utils/catchAsync');
 
-let tasks = [];
-let nextId = 1;
+router.post('/', catchAsync(async (req, res) => {
 
-function findTask(id) {
-    const task = tasks.find(t => t.id === parseInt(id));
-    
-    if (!task) {
-        throw new AppError('Task not found', 404);
-    }
-
-    return task;
-}
-
-router.post('/', (req, res) => {
-
-    const { title, description} = req.body;
+    const { title, description } = req.body;
 
     if (!title) {
-        throw new AppError('Title is required', 400);
+        throw new AppError('title is required', 400);
     }
 
-    const task = {
-        id: nextId++,
-        title,
-        description: description || '',
-        completed: false,
-        createdAt: new Date().toISOString
-    }
+    const result = await pool.query(`
+        INSERT INTO tasks (title, description) VALUES ($1, $2) RETURNING *`,
+        [title, description || '']
+    );
 
-    tasks.push(task);
-    res.status(201).json(task);
-});
+    res.status(201).json(result.rows[0]);
+}));
 
-router.get('/', (req, res) => {
-    res.json(tasks);
-});
+router.get('/', catchAsync(async(req, res) => {
 
-router.get('/:id', (req, res) => {
+    const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
+    res.json(result.rows);
+}));
 
-    const task = findTask(req.params.id);
+router.get('/:id', catchAsync(async(req, res) => {
 
-    if (!task) {
-        throw new AppError('Task not found', 404);
-    }
+    const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [req.params.id]);
 
-    res.json(task);
-});
-
-router.put('/:id', (req, res) => {
-
-    const task = findTask(req.params.id);
-
-    if (!task) {
+    if (result.rows.length === 0) {
         throw new AppError('task not found', 404);
     }
+
+    res.json(result.rows[0]);
+}));
+
+router.put('/:id', catchAsync(async(req, res) => {
 
     const { title, description, completed } = req.body;
 
-    if (title !== undefined) task.title = title;
-    if (description !== undefined) task.description = description;
-    if (completed !== undefined) task.completed = completed;
-    
-    res.json(task);
-});
+    const result = await pool.query(
+        `UPDATE tasks
+        SET title = COALESCE($1, title),
+            description = COALESCE($2, description),
+            completed = COALESCE($3, completed)
+        WHERE id = $4
+        RETURNING *`,
+        [title, description, completed, req.params.id]
+    );
 
-router.delete('/:id', (req, res) => {
-
-    const index = tasks.findIndex(t => t.id === parseInt(req.params.id));
-
-    if (index === -1) {
+    if (result.rows.length === 0) {
         throw new AppError('task not found', 404);
     }
 
-    const deleted = tasks.splice(index, 1);
-    res.json({ message:'task deleted', task: deleted[0]});
-});
+    res.json(result.rows[0]);
+}));
+
+router.delete('/:id', catchAsync(async(req, res) => {
+
+    const result = await pool.query(
+        'DELETE tasks FROM WHERE id = $1 RETURNING *', [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+        throw new AppError('task not found', 404);
+    }
+
+    res.json({ message: 'task deleted', task: result.rows[0]});
+}));
 
 module.exports = router;
