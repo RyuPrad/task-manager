@@ -1,0 +1,43 @@
+### Create a task (lesson 3)
+POST http://localhost:3000/tasks
+Content-Type: application/json
+
+{
+  "title": "Learn Express",
+  "description": "Build a task manager API"
+}
+
+### Get all tasks (lesson 3)
+GET http://localhost:3000/tasks
+
+### LESSON 12
+
+### Get first page (default: 20 per page)
+GET http://localhost:3000/tasks
+
+### Get 5 per page, page 1
+GET http://localhost:3000/tasks?page=1&limit=5
+
+### Get page 2
+GET http://localhost:3000/tasks?page=2&limit=5
+
+### Only completed tasks
+GET http://localhost:3000/tasks?completed=true
+
+### Only incomplete tasks
+GET http://localhost:3000/tasks?completed=false
+
+### Search for "grocery" (should find 2 tasks)
+GET http://localhost:3000/tasks?search=grocery
+
+### Combine: incomplete tasks sorted by title A-Z
+GET http://localhost:3000/tasks?completed=false&sort=title&order=asc
+
+### Combine everything: search + filter + sort + paginate
+GET http://localhost:3000/tasks?search=learn&completed=false&sort=title&order=asc&page=1&limit=5
+
+### Bad params (should get 400)
+GET http://localhost:3000/tasks?page=-1
+
+### Bad sort column (should get 400)
+GET http://localhost:3000/tasks?sort=password

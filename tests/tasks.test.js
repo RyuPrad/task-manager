@@ -63,7 +63,7 @@ describe('GET /tasks', () => {
         const response = await request(app).get('/tasks');
 
         expect(response.status).toBe(200);
-        expect(response.body).toEqual([]);
+        expect(response.body.data).toEqual([]);
     });
 
     test('should return all tasks', async() => {
@@ -74,7 +74,89 @@ describe('GET /tasks', () => {
         const response = await request(app).get('/tasks');
 
         expect(response.status).toBe(200);
-        expect(response.body).toHaveLength(2);
+        expect(response.body.data).toHaveLength(2);
+    });
+});
+
+describe('GET /tasks/ (pagination, filtering, search)', () => {
+    // Helper to create multiple tasks
+    async function createTasks(tasks) {
+        for (const task of tasks) {
+            await request(app).post('/tasks').send(task);
+        }
+    }
+
+    test('should paginate result', async() => {
+        await createTasks([
+            { title: 'Task 1'},
+            { title: 'Task 2'},
+            { title: 'Task 3'},
+            { title: 'Task 4'},
+            { title: 'Task 5'}
+        ]);
+
+        const response = await request(app).get('/tasks?page=1&limit=2');
+
+        expect(response.status).toBe(200);
+        expect(response.body.data).toHaveLength(2);
+        expect(response.body.pagination.total_tasks).toBe(5);
+        expect(response.body.pagination.total_pages).toBe(3);
+        expect(response.body.pagination.has_next).toBe(true);
+        expect(response.body.pagination.has_prev).toBe(false);
+    });
+
+    test('should filter by completed status', async() => {
+        await createTasks([
+            { title: 'Done task' },
+            { title: 'Open task' }
+        ]);
+
+        // Mark first task as completed
+        await request(app).put('/tasks/1').send({ completed: true });
+
+        const response = await request(app).get('/tasks?completed=true');
+
+        expect(response.status).toBe(200);
+        expect(response.body.data).toHaveLength(1);
+        expect(response.body.data[0].title).toBe('Done task');
+    });
+
+    test('should search by title', async() => {
+        await createTasks([
+            { title: 'Buy groceries' },
+            { title: 'Learn Express' },
+            { title: 'Grocery list' }
+        ]);
+
+        const response = await request(app).get('/tasks?search=grocer');
+
+        expect(response.status).toBe(200);
+        expect(response.body.data).toHaveLength(2);
+    });
+
+    test('should sort title by ascending', async() => {
+        await createTasks([
+            { title: 'Cherry' },
+            { title: 'Apple' },
+            { title: 'Banana' }
+        ]);
+
+        const response = await request(app).get('/tasks?sort=title&order=asc');
+
+        expect(response.status).toBe(200);
+        expect(response.body.data[0].title).toBe('Apple');
+        expect(response.body.data[1].title).toBe('Banana');
+        expect(response.body.data[2].title).toBe('Cherry');
+    });
+
+    test('should reject invalid page', async() => {
+        const response = await request(app).get('/tasks?page=-1');
+        expect(response.status).toBe(400);
+    });
+
+    test('should reject invalid sort column', async() => {
+        const response = await request(app).get('/tasks?sort=password');
+        expect(response.status).toBe(400);
     });
 });
 

@@ -1,4 +1,4 @@
-const { body, param, validationResult } = require('express-validator');
+const { body, param, query, validationResult } = require('express-validator');
 const AppError = require('../utils/AppError');
 
 function handleValidation(req, res, next) {
@@ -57,4 +57,36 @@ const idParamRules = [
     handleValidation
 ];
 
-module.exports = { createTaskRules, updateTaskRules, idParamRules };
+const getTaskRules = [
+    query('page')
+        .optional()
+        .isInt({ min: 1 }).withMessage('Page must be a positive integer')
+        .toInt(),
+
+    query('limit')
+        .optional()
+        .isInt({ min: 1, max: 100 }).withMessage('Limit must be between  1 and 100')
+        .toInt(),
+
+    query('completed')
+        .optional()
+        .isBoolean().withMessage('Completed must be true or false')
+        .toBoolean(),
+
+    query('search')
+        .optional()
+        .trim()
+        .isLength({ min: 1, max: 100 }).withMessage('Search must be between 1 and 100 characters'),
+
+    query('sort')
+        .optional()
+        .isIn(['created_at', 'title']).withMessage('Sort must be created_at or title'),
+
+    query('order')
+        .optional()
+        .isIn(['asc', 'desc']).withMessage('order must be asc or desc'),
+
+    handleValidation
+];
+
+module.exports = { createTaskRules, updateTaskRules, idParamRules, getTaskRules };

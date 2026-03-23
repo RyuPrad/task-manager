@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "NODE_ENV=test jest --verbose --forceExit --detectOpenHandles"
+    "test": "NODE_ENV=test jest --verbose --forceExit --detectOpenHandles",
+    "seed": "node db/seed.js"
   },
   "keywords": [],
   "author": "",
