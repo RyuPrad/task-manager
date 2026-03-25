@@ -8,7 +8,8 @@ async function setupTestDB() {
             title VARCHAR(255) NOT NULL,
             description TEXT DEFAULT '',
             completed BOOLEAN DEFAULT false,
-            created_at TIMESTAMP DEFAULT NOW()
+            created_at TIMESTAMP DEFAULT NOW(),
+            user_id UUID NOT NULL
         )
     `);
 }

@@ -41,3 +41,32 @@ GET http://localhost:3000/tasks?page=-1
 
 ### Bad sort column (should get 400)
 GET http://localhost:3000/tasks?sort=password
+
+### Lesson 13
+
+### Step 1: Get Google login URL
+GET http://localhost:3000/auth/google
+
+### Step 2: Copy the URL from the response, open it in your browser,
+### log in with Google, and you'll be redirected to /auth/callback
+### with tokens in the response.
+
+### Step 3: Use the access_token to hit protected routes
+GET http://localhost:3000/auth/me
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Step 4: Create a task as the authenticated user
+POST http://localhost:3000/tasks
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "title": "My first authenticated task"
+}
+
+### Step 5: Get your tasks (only yours will show)
+GET http://localhost:3000/tasks
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Step 6: Try without a token (should get 401)
+GET http://localhost:3000/tasks

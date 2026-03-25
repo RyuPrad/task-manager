@@ -17,13 +17,13 @@ const createTaskRules = [
     body('title')
         .trim()
         .notEmpty().withMessage('Title is required')
-        .isLength({ max: 225 }).withMessage('Title must be 255 characters or less')
+        .isLength({ max: 255 }).withMessage('Title must be 255 characters or less')
         .escape(),
     
     body('description')
         .optional()
         .trim()
-        .isLength({ max: 200 }).withMessage('Description must be 2000 characters or less')
+        .isLength({ max: 2000 }).withMessage('Description must be 2000 characters or less')
         .escape(),
 
     handleValidation
@@ -34,13 +34,13 @@ const updateTaskRules = [
         .optional()
         .trim()
         .notEmpty().withMessage('Title must not be empty')
-        .isLength({ max: 225 }).withMessage('Title must 255 characters or less')
+        .isLength({ max: 255 }).withMessage('Title must 255 characters or less')
         .escape(),
 
     body('description')  
         .optional()
         .trim()
-        .isLength({ max: 200 }).withMessage('Description must 2000 characters or less') 
+        .isLength({ max: 2000 }).withMessage('Description must 2000 characters or less') 
         .escape(),
 
     body('completed')
@@ -89,4 +89,4 @@ const getTaskRules = [
     handleValidation
 ];
 
-module.exports = { createTaskRules, updateTaskRules, idParamRules, getTaskRules };
+module.exports = { createTaskRules, updateTaskRules, idParamRules, getTasksRules: getTaskRules };
