@@ -1,4 +1,20 @@
 const request = require('supertest');
+
+// Mock the auth middleware BEFORE importing app
+jest.mock('../middleware/auth', () => {
+    return (req, res, next) => {
+        req.user = {
+            id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            email: 'testuser@example.com',
+            user_metadata: {
+                full_name: 'Test User'
+            }
+        };
+        next();
+    };
+});
+
+
 const app = require('../app');
 const { setupTestDB, teardownTestDB, clearTask } = require('../db/test-setup');
 
@@ -29,6 +45,7 @@ describe('POST /tasks', () => {
         expect(response.body.completed).toBe(false);
         expect(response.body.id).toBeDefined();
         expect(response.body.created_at).toBeDefined();
+        expect(response.body.user_id).toBe('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
     });
 
     test('should create a task without description', async() => {
@@ -245,7 +262,7 @@ describe('DELETE /tasks/:id', () => {
         const response = await request(app).delete(`/tasks/${created.body.id}`);
 
         expect(response.status).toBe(200);
-        expect(response.body.message).toBe('task deleted');
+        expect(response.body.message).toBe('Task deleted');
 
         // Verify it's actualy gone
         const check = await request(app).get(`/tasks/${created.body.id}`);
@@ -268,3 +285,50 @@ describe('404 handler', () => {
     });
 });
 
+describe('User isolation', () => {
+    test('should not see tasks from other users', async() => {
+        // Insert a task directly into the database with a different user_id
+        const pool = require('../db/pool');
+        await pool.query(
+            'INSERT INTO tasks (title, user_id) VALUES ($1, $2)',
+            ['Other users task', '11111111-2222-3333-4444-555555555555']
+        );
+
+        // Create a task as our user test
+        await request(app)
+            .post('/tasks')
+            .send({ title: 'My task' });
+
+        const response = await request(app).get('/tasks');
+
+        expect(response.status).toBe(200);
+        expect(response.body.data).toHaveLength(1);
+        expect(response.body.data[0].title).toBe('My task');
+    });
+
+    test('should not update another users task', async() => {
+        const pool = require('../db/pool');
+        const result = await pool.query(
+            'INSERT INTO tasks (title, user_id) VALUES ($1, $2) RETURNING *',
+            ['Not yours', '11111111-2222-3333-4444-555555555555']
+        );
+
+        const response = await request(app)
+            .put(`/tasks/${result.rows[0].id}`)
+            .send({ title: 'Hacked' });
+
+        expect(response.status).toBe(404);
+    });
+
+    test('should not delete another users task', async() => {
+        const pool = require('../db/pool');
+        const result = await pool.query(
+            'INSERT INTO tasks (title, user_id) VALUES ($1, $2) RETURNING *',
+            ['Not yours', '11111111-2222-3333-4444-555555555555']
+        );
+
+        const response = await request(app).delete(`/tasks/${result.rows[0].id}`);
+
+        expect(response.status).toBe(404);
+    });
+});
